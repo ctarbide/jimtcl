@@ -97,7 +97,7 @@
 enum wbuftype {
     WBUF_OPT_NONE,      /* write immediately */
     WBUF_OPT_LINE,      /* write if NL is seen */
-    WBUF_OPT_FULL,      /* write when write buffer is full or on flush */
+    WBUF_OPT_FULL       /* write when write buffer is full or on flush */
 };
 
 #if defined(JIM_IPV6)
@@ -709,8 +709,10 @@ static void aio_consume(Jim_Obj *objPtr, int n)
      */
 }
 
+#ifdef jim_ext_eventloop
 /* forward declaration */
 static int aio_autoflush(Jim_Interp *interp, void *clientData, int mask);
+#endif
 
 /**
  * Flushes af->writebuf to the channel and removes that data
@@ -758,6 +760,7 @@ static int aio_flush(Jim_Interp *interp, AioFile *af)
     return JIM_OK;
 }
 
+#ifdef jim_ext_eventloop
 /**
  * Called when the channel is writable.
  * Write what we can and return -1 when the write buffer is empty to remove the handler.
@@ -773,6 +776,7 @@ static int aio_autoflush(Jim_Interp *interp, void *clientData, int mask)
     }
     return 0;
 }
+#endif
 
 /**
  * Read until 'len' bytes are available in readbuf.
@@ -1616,6 +1620,7 @@ static int aio_cmd_buffering(Jim_Interp *interp, int argc, Jim_Obj *const *argv)
     return JIM_OK;
 }
 
+#ifdef jim_ext_eventloop
 static int aio_cmd_timeout(Jim_Interp *interp, int argc, Jim_Obj *const *argv)
 {
 #ifdef HAVE_SELECT
@@ -1632,6 +1637,7 @@ static int aio_cmd_timeout(Jim_Interp *interp, int argc, Jim_Obj *const *argv)
     return JIM_ERR;
 #endif
 }
+#endif
 
 #ifdef jim_ext_eventloop
 static int aio_eventinfo(Jim_Interp *interp, AioFile * af, unsigned mask,

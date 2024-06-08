@@ -26,3 +26,7 @@ build-jim-ext
 *.gcov
 coverage*.html
 jimtcl.pc
+/tests/copy.in
+/tests/copy.out
+/tests/testdata.in
+*.stamp

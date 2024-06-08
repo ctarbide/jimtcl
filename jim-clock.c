@@ -31,7 +31,7 @@ struct clock_options {
 static int parse_clock_options(Jim_Interp *interp, int argc, Jim_Obj *const *argv, struct clock_options *opts)
 {
     static const char * const options[] = { "-gmt", "-format", NULL };
-    enum { OPT_GMT, OPT_FORMAT, };
+    enum { OPT_GMT, OPT_FORMAT };
     int i;
 
     for (i = 0; i < argc; i += 2) {

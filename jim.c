@@ -3036,7 +3036,7 @@ static int JimStringIs(Jim_Interp *interp, Jim_Obj *strObjPtr, Jim_Obj *strClass
     enum {
         STR_IS_INTEGER, STR_IS_ALPHA, STR_IS_ALNUM, STR_IS_ASCII, STR_IS_DIGIT,
         STR_IS_DOUBLE, STR_IS_LOWER, STR_IS_UPPER, STR_IS_SPACE, STR_IS_XDIGIT,
-        STR_IS_CONTROL, STR_IS_PRINT, STR_IS_GRAPH, STR_IS_PUNCT, STR_IS_BOOLEAN,
+        STR_IS_CONTROL, STR_IS_PRINT, STR_IS_GRAPH, STR_IS_PUNCT, STR_IS_BOOLEAN
     };
     int strclass;
     int len;
@@ -4226,13 +4226,13 @@ static const char *Jim_memrchr(const char *p, int c, int len)
 }
 #endif
 
+#ifdef jim_ext_namespace
 /**
  * If the command is a proc, sets/updates the cached namespace (nsObj)
  * based on the command name.
  */
 static void JimUpdateProcNamespace(Jim_Interp *interp, Jim_Cmd *cmdPtr, Jim_Obj *nameObjPtr)
 {
-#ifdef jim_ext_namespace
     if (cmdPtr->isproc) {
         int len;
         const char *cmdname = Jim_GetStringNoQualifier(nameObjPtr, &len);
@@ -4255,8 +4255,8 @@ static void JimUpdateProcNamespace(Jim_Interp *interp, Jim_Cmd *cmdPtr, Jim_Obj 
             Jim_FreeNewObj(interp, tempObj);
         }
     }
-#endif
 }
+#endif
 
 static Jim_Cmd *JimCreateProcedureCmd(Jim_Interp *interp, Jim_Obj *argListObjPtr,
     Jim_Obj *staticsListObjPtr, Jim_Obj *bodyObjPtr, Jim_Obj *nsObj)
@@ -4394,7 +4394,9 @@ int Jim_RenameCommand(Jim_Interp *interp, Jim_Obj *oldNameObj, Jim_Obj *newNameO
         else {
             /* Add the new name first */
             JimIncrCmdRefCount(cmdPtr);
+#ifdef jim_ext_namespace
             JimUpdateProcNamespace(interp, cmdPtr, newNameObj);
+#endif
             Jim_AddHashEntry(&interp->commands, newNameObj, cmdPtr);
 
             /* Now remove the old name */
@@ -4549,6 +4551,7 @@ static int SetVariableFromAny(Jim_Interp *interp, struct Jim_Obj *objPtr)
     }
 
     if (varName[0] == ':' && varName[1] == ':') {
+        Jim_Obj *tempObj;
         while (*varName == ':') {
             varName++;
             len--;
@@ -4556,7 +4559,7 @@ static int SetVariableFromAny(Jim_Interp *interp, struct Jim_Obj *objPtr)
         global = 1;
         framePtr = interp->topFramePtr;
         /* XXX should use length */
-        Jim_Obj *tempObj = Jim_NewStringObj(interp, varName, len);
+        tempObj = Jim_NewStringObj(interp, varName, len);
         vv = JimFindVariable(&framePtr->vars, tempObj);
         Jim_FreeNewObj(interp, tempObj);
     }
@@ -4929,12 +4932,13 @@ int Jim_UnsetVariable(Jim_Interp *interp, Jim_Obj *nameObjPtr, int flags)
             if (nameObjPtr->internalRep.varValue.global) {
                 int len;
                 const char *name = Jim_GetString(nameObjPtr, &len);
+		Jim_Obj *tempObj;
                 while (*name == ':') {
                     name++;
                     len--;
                 }
                 framePtr = interp->topFramePtr;
-                Jim_Obj *tempObj = Jim_NewStringObj(interp, name, len);
+                tempObj = Jim_NewStringObj(interp, name, len);
                 retval = JimUnsetVariable(&framePtr->vars, tempObj);
                 Jim_FreeNewObj(interp, tempObj);
             }
@@ -7480,7 +7484,7 @@ static void JimFreeDict(Jim_Interp *interp, Jim_Dict *dict)
 enum {
     DICT_HASH_FIND = -1,
     DICT_HASH_REMOVE = -2,
-    DICT_HASH_ADD = -3,
+    DICT_HASH_ADD = -3
 };
 
 /**
@@ -8294,7 +8298,7 @@ enum
     JIM_EXPROP_FUNC_SQRT,
     JIM_EXPROP_FUNC_POW,
     JIM_EXPROP_FUNC_HYPOT,
-    JIM_EXPROP_FUNC_FMOD,
+    JIM_EXPROP_FUNC_FMOD
 };
 
 /* A expression node is either a term or an operator
@@ -8974,7 +8978,7 @@ static int JimExprOpTernary(Jim_Interp *interp, struct JimExprNode *node)
 enum
 {
     OP_FUNC = 0x0001,        /* function syntax */
-    OP_RIGHT_ASSOC = 0x0002, /* right associative */
+    OP_RIGHT_ASSOC = 0x0002  /* right associative */
 };
 
 /* name - precedence - arity - opcode
@@ -10740,13 +10744,15 @@ static int Jim_IncrCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *arg
 
 static int JimTraceCallback(Jim_Interp *interp, const char *type, int argc, Jim_Obj *const *argv)
 {
-    JimPanic((interp->traceCmdObj == NULL, "xtrace invoked with no object"));
-
     int ret;
     Jim_Obj *nargv[7];
-    Jim_Obj *traceCmdObj = interp->traceCmdObj;
-    Jim_Obj *resultObj = Jim_GetResult(interp);
+    Jim_Obj *traceCmdObj, *resultObj;
     ScriptObj *script = NULL;
+
+    JimPanic((interp->traceCmdObj == NULL, "xtrace invoked with no object"));
+
+    traceCmdObj = interp->traceCmdObj;
+    resultObj = Jim_GetResult(interp);
 
     /* Where were we called from? */
     /* This may be NULL for Jim_EvalObjVector() */
@@ -13646,7 +13652,7 @@ static int Jim_DebugCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *ar
         JIM_DEF_SUBCMD("refcount", "object", 1, 1),
         JIM_DEF_SUBCMD("scriptlen", "script", 1, 1),
         JIM_DEF_SUBCMD("show", "object", 1, 1),
-        { /* null terminator */ }
+        { 0 /* null terminator */ }
     };
 
     const jim_subcmd_type *ct = Jim_ParseSubCmd(interp, cmds, argc, argv);
@@ -14075,8 +14081,10 @@ static int Jim_ProcCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *arg
         Jim_Obj *nameObjPtr = JimQualifyName(interp, argv[1]);
         JimCreateCommand(interp, nameObjPtr, cmd);
 
+#ifdef jim_ext_namespace
         /* Calculate and set the namespace for this proc */
         JimUpdateProcNamespace(interp, cmd, nameObjPtr);
+#endif
         Jim_DecrRefCount(interp, nameObjPtr);
 
         /* Unlike Tcl, set the name of the proc as the result */
@@ -14409,7 +14417,7 @@ static int Jim_StringCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *a
         JIM_DEF_SUBCMD("trim", "string ?trimchars?", 1, 2),
         JIM_DEF_SUBCMD("trimleft", "string ?trimchars?", 1, 2),
         JIM_DEF_SUBCMD("trimright", "string ?trimchars?", 1, 2),
-        { /* null terminator */ }
+        { 0 /* null terminator */ }
     };
     const jim_subcmd_type *ct = Jim_ParseSubCmd(interp, cmds, argc, argv);
     if (!ct) {
@@ -14946,7 +14954,7 @@ wrongargs:
             int option;
             int ret;
             static const char * const try_options[] = { "on", "trap", "finally", NULL };
-            enum { TRY_ON, TRY_TRAP, TRY_FINALLY, };
+            enum { TRY_ON, TRY_TRAP, TRY_FINALLY };
 
             if (Jim_GetEnum(interp, argv[idx], try_options, &option, "handler", JIM_ERRMSG) != JIM_OK) {
                 return JIM_ERR;
@@ -15065,10 +15073,11 @@ wrongargs:
     }
 
     if (finallyScriptObj) {
+        int ret;
         /* Execute the on script. If OK, restore previous resul/exitcode */
         Jim_Obj *prevResultObj = Jim_GetResult(interp);
         Jim_IncrRefCount(prevResultObj);
-        int ret = Jim_EvalObj(interp, finallyScriptObj);
+        ret = Jim_EvalObj(interp, finallyScriptObj);
         if (ret == JIM_OK) {
             Jim_SetResult(interp, prevResultObj);
         }
@@ -15441,7 +15450,7 @@ static int Jim_DictCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *arg
         JIM_DEF_SUBCMD("for", "vars dictionary script", 3, 3),
         JIM_DEF_SUBCMD("replace", "dictionary ?key value ...?", 1, -1),
         JIM_DEF_SUBCMD("update", "varName ?arg ...? script", 2, -1),
-        { /* null terminator */ }
+        { 0 /* null terminator */ }
     };
     const jim_subcmd_type *ct = Jim_ParseSubCmd(interp, cmds, argc, argv);
     if (!ct) {
@@ -15597,7 +15606,7 @@ static int JimIsGlobalNamespace(Jim_Obj *objPtr)
 static int Jim_InfoCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *argv)
 {
     Jim_Obj *objPtr;
-    int mode = 0;
+    int mode = 0, option;
 
     /* Must be kept in order with the array below */
     enum {
@@ -15650,7 +15659,7 @@ static int Jim_InfoCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *arg
         JIM_DEF_SUBCMD("statics", "procname", 1, 1),
         JIM_DEF_SUBCMD("vars", "?pattern?", 0, 1),
         JIM_DEF_SUBCMD("version", NULL, 0, 0),
-        { /* null terminator */ }
+        { 0 /* null terminator */ }
     };
     const jim_subcmd_type *ct;
 #ifdef jim_ext_namespace
@@ -15672,7 +15681,7 @@ static int Jim_InfoCoreCommand(Jim_Interp *interp, int argc, Jim_Obj *const *arg
         return ct->function(interp, argc, argv);
     }
     /* (ct - cmds) is the index into the table */
-    int option = ct - cmds;
+    option = ct - cmds;
 
     switch (option) {
         case INFO_EXISTS:

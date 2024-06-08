@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+echo "Building bootstrap jimsh"
+./make-bootstrap-jim_noweb >jimsh_bootstrap.nw
+
+set --
+set -- "$@" -Rjimsh_bootstrap_noweb.c
+set -- "$@" -ojimsh_bootstrap_noweb.c
+set -- "$@" jimsh_bootstrap.nw
+set -- "$@" --
+set -- "$@" ${CC:-gcc}
+set -- "$@" -ansi -pedantic
+set -- "$@" -Wall
+set -- "$@" -Wdeclaration-after-statement
+set -- "$@" -Wno-long-long  # allows 'long long'
+set -- "$@" -ojimsh_bootstrap_noweb
+
+nofake-exec.sh --error "$@"
+
+echo "Testing bootstrap jimsh (noweb version)"
+( cd tests; ../jimsh_bootstrap_noweb runall.tcl )
+
+echo "All tests passed"
+
+rm -f jimsh_bootstrap_noweb jimsh_bootstrap_noweb.c

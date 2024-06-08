@@ -1,7 +1,7 @@
 #ifndef JIM_WIN32COMPAT_H
 #define JIM_WIN32COMPAT_H
 
-/* Compatibility for Windows (mingw and msvc, not cygwin */
+/* Compatibility for Windows (mingw and msvc, not cygwin) */
 
 #ifdef __cplusplus
 extern "C" {
